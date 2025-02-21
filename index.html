@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 3D RPG</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        WASD to move, Space to attack<br>
+        Player Health: <span id="playerHealth">100</span> | Enemy Health: <span id="enemyHealth">50</span>
+    </div>
+
+    <!-- Load Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Ground plane
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Player (blue cube)
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.y = 0.5;
+        scene.add(player);
+
+        // Enemy (red cube)
+        const enemyGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const enemyMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+        enemy.position.set(5, 0.5, 5);
+        scene.add(enemy);
+
+        // Camera position
+        camera.position.set(0, 5, 10);
+        camera.lookAt(player.position);
+
+        // Player stats
+        let playerHealth = 100;
+        let enemyHealth = 50;
+        let playerAttack = 10;
+
+        // Movement controls
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.code] = true);
+        document.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        function updateStats() {
+            document.getElementById('playerHealth').textContent = playerHealth;
+            document.getElementById('enemyHealth').textContent = enemyHealth;
+        }
+
+        // Game loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Player movement
+            const speed = 0.1;
+            if (keys['KeyW']) player.position.z -= speed;
+            if (keys['KeyS']) player.position.z += speed;
+            if (keys['KeyA']) player.position.x -= speed;
+            if (keys['KeyD']) player.position.x += speed;
+
+            // Attack (Space key)
+            if (keys['Space']) {
+                const distance = player.position.distanceTo(enemy.position);
+                if (distance < 2 && enemyHealth > 0) {
+                    enemyHealth -= playerAttack;
+                    console.log(`Player attacks! Enemy health: ${enemyHealth}`);
+                    if (enemyHealth <= 0) {
+                        scene.remove(enemy);
+                        console.log("Enemy defeated!");
+                    }
+                    updateStats();
+                    keys['Space'] = false; // Prevent continuous attack
+                }
+            }
+
+            // Keep player above ground
+            player.position.y = 0.5;
+
+            // Camera follows player
+            camera.position.set(player.position.x, 5, player.position.z + 10);
+            camera.lookAt(player.position);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
